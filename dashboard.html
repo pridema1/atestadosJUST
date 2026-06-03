@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Atestados | Dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css?v=20260603-2">
+</head>
+<body>
+  <main class="page">
+    <aside class="sidebar">
+      <div class="brand">
+        <img class="brand-logo" src="assets/just-logo.png" alt="Logo Construtora JUST">
+        <strong>Construtora JUST</strong>
+      </div>
+
+      <nav>
+        <a href="index.html">Tela inicial</a>
+        <a href="formulario.html">Novo formulário</a>
+        <a class="active" href="dashboard.html">Dashboard</a>
+      </nav>
+    </aside>
+
+    <section class="content">
+      <header class="topbar">
+        <div>
+          <h1>Dashboard de absenteísmo</h1>
+          <p>Área restrita para RH visualizar, editar, excluir, filtrar e exportar registros.</p>
+        </div>
+        <a class="button" href="formulario.html">Novo formulário</a>
+      </header>
+
+      <div id="dashboardApp"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="js/cid-database.js"></script>
+  <script src="js/colaboradores-database.js"></script>
+  <script type="text/babel" src="jsx/dashboard.jsx?v=20260603-2"></script>
+</body>
+</html>
