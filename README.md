@@ -1,19 +1,19 @@
-# Gestao de Atestados Medicos
+# Gestão de Atestados Médicos
 
-Aplicacao web estatica para registrar atestados e declaracoes medicas, filtrar dados e visualizar indicadores de absenteismo.
+Aplicação web estática para registrar atestados e declarações médicas, filtrar dados e visualizar indicadores de absenteísmo.
 
-## Paginas
+## Páginas
 
-- `index.html`: entrada da aplicacao.
-- `formulario.html`: formulario publico para envio.
-- `dashboard.html`: area restrita para RH consultar, editar, excluir, filtrar e exportar registros.
+* `index.html`: entrada da aplicação.
+* `formulario.html`: formulário público para envio.
+* `dashboard.html`: área restrita para o RH consultar, editar, excluir, filtrar e exportar registros.
 
-## Dados sensiveis
+## Dados sensíveis
 
-Este repositorio nao inclui base real de funcionarios, planilhas de importacao, PDFs, screenshots de teste, `node_modules` ou arquivos locais.
+Este repositório não inclui base real de funcionários, planilhas de importação, PDFs, capturas de tela de teste, `node_modules` ou arquivos locais.
 
 ## Senha do dashboard
 
-A senha publicada e placeholder: `ALTERE_ANTES_DE_USAR`.
+A senha publicada é apenas um placeholder: `ALTERE_ANTES_DE_USAR`.
 
-Antes de uso real, configure uma senha fora do codigo versionado ou migre para autenticacao de backend. Senha em JavaScript no navegador nao e seguranca real.
+Antes do uso real, configure uma senha fora do código versionado ou migre para uma autenticação em backend. Uma senha em JavaScript executada no navegador não constitui uma medida de segurança real.
