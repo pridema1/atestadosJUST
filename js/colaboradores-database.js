@@ -1,1 +1,0 @@
-window.COLABORADORES_DATABASE = [];
