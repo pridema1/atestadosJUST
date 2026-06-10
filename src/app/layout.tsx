@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Gestao de Atestados Medicos | JUST",
-  description: "Controle de atestados medicos da Construtora JUST",
+  title: "Gestão de Atestados Médicos | JUST",
+  description: "Controle de atestados médicos da Construtora JUST",
 };
 
 export default function RootLayout({

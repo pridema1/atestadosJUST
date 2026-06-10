@@ -39,7 +39,7 @@ import styles from "./novo-formulario.module.css";
 
 const documentTypes: Array<{ label: string; value: MedicalCertificateType }> = [
   { label: "Atestado", value: "Atestado" },
-  { label: "Declaracao medica", value: "Declaracao" },
+  { label: "Declaração médica", value: "Declaracao" },
 ];
 
 const emptyCid: CidFields = {
@@ -51,6 +51,8 @@ const emptyCid: CidFields = {
   category: "",
   subcategory: "",
 };
+
+const DEFAULT_WORKDAY_HOURS = 8;
 
 export default function NovoFormularioPage() {
   const addCertificate = useAtestadosStore((state) => state.addCertificate);
@@ -117,7 +119,7 @@ export default function NovoFormularioPage() {
     const computedLeaveDays = calculateLeaveDays(leaveStart, leaveEnd);
     const computedAbsenceHours =
       type === "Atestado"
-        ? computedLeaveDays * 24
+        ? computedLeaveDays * DEFAULT_WORKDAY_HOURS
         : calculateHoursBetween(startTime, endTime);
     const hourlyValue = Number(formData.get("hourlyValue") ?? 0);
     const missingFields = getMissingFields({
@@ -135,7 +137,7 @@ export default function NovoFormularioPage() {
     });
 
     if (missingFields.length) {
-      toast.error(`Campos obrigatorios faltando: ${missingFields.join(", ")}.`);
+      toast.error(`Campos obrigatórios faltando: ${missingFields.join(", ")}.`);
       return;
     }
 
@@ -164,16 +166,16 @@ export default function NovoFormularioPage() {
     setStartTime("");
     setEndTime("");
     setType("Atestado");
-    toast.success("Formulario enviado.");
+    toast.success("Formulário enviado.");
   }
 
   return (
     <AppShell>
       <Card className={styles.card}>
         <CardHeader>
-          <CardTitle>Novo envio medico</CardTitle>
+          <CardTitle>Novo envio médico</CardTitle>
           <CardDescription>
-            Preencha os dados do atestado ou declaracao medica.
+            Preencha os dados do atestado ou declaração médica.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -205,7 +207,7 @@ export default function NovoFormularioPage() {
               <div className={styles.gridTwo}>
                 <RequiredTextField
                   id="role"
-                  label="Funcao"
+                  label="Função"
                   placeholder="Ex.: Pedreiro, Administrativo, Mestre de obras"
                 />
                 <RequiredTextField
@@ -238,14 +240,14 @@ export default function NovoFormularioPage() {
               )}
 
               <Field>
-                <FieldLabel htmlFor="notes">Descricao/observacao</FieldLabel>
+                <FieldLabel htmlFor="notes">Descrição/observação</FieldLabel>
                 <Textarea
                   id="notes"
                   name="notes"
                   placeholder={
                     isMedicalCertificate
-                      ? "Ex.: Afastamento por atestado medico"
-                      : "Ex.: Comparecimento em consulta medica"
+                      ? "Ex.: Afastamento por atestado médico"
+                      : "Ex.: Comparecimento em consulta médica"
                   }
                 />
               </Field>
@@ -264,7 +266,7 @@ export default function NovoFormularioPage() {
                     type="number"
                   />
                   <FieldDescription>
-                    Se vazio, dashboard usa valor padrao.
+                    Se vazio, dashboard usa valor padrão.
                   </FieldDescription>
                 </Field>
               ) : null}
@@ -281,7 +283,7 @@ export default function NovoFormularioPage() {
 
               <Button className={styles.submit} type="submit">
                 <ClipboardPlusIcon data-icon="inline-start" />
-                Enviar formulario
+                Enviar formulário
               </Button>
             </FieldGroup>
           </form>
@@ -456,7 +458,7 @@ function CidFieldsSection({
         <Input
           id="cidSearch"
           name="cidSearch"
-          placeholder="Busque por codigo, nome ou abreviacao. Ex.: M54, dorsalgia, ansiedade"
+          placeholder="Busque por código, nome ou abreviação. Ex.: M54, dorsalgia, ansiedade"
           required={isRequired}
           value={cidSearch}
           onChange={(event) => onCidSearch(event.target.value)}
@@ -478,14 +480,14 @@ function CidFieldsSection({
       </Field>
 
       <div className={styles.gridTwo}>
-        <ReadOnlyCidField label="Codigo" value={cid.code} />
-        <ReadOnlyCidField label="Abreviacao" value={cid.abbreviation} />
+        <ReadOnlyCidField label="Código" value={cid.code} />
+        <ReadOnlyCidField label="Abreviação" value={cid.abbreviation} />
       </div>
 
-      <ReadOnlyCidField label="Descricao" value={cid.description} />
+      <ReadOnlyCidField label="Descrição" value={cid.description} />
 
       <div className={styles.gridTwo}>
-        <ReadOnlyCidField label="Capitulo" value={cid.chapter} />
+        <ReadOnlyCidField label="Capítulo" value={cid.chapter} />
         <ReadOnlyCidField label="Grupo" value={cid.group} />
       </div>
 
@@ -610,7 +612,7 @@ function getMissingFields({
   const missing = [
     [!employeeName, "nome"],
     [!jobSite, "obra"],
-    [!role, "funcao"],
+    [!role, "função"],
   ];
 
   if (type === "Atestado") {

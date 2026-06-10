@@ -17,8 +17,8 @@
 }
 
 .typeToggleItem[data-state="on"] {
-  background: #d9a913;
-  color: #111111;
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .gridTwo {
@@ -91,8 +91,8 @@
 }
 
 .submit {
-  background: #d9a913;
-  color: #111111;
+  background: #2563eb;
+  color: #ffffff;
   font-weight: 800;
   width: 100%;
 }

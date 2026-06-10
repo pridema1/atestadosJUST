@@ -1,6 +1,12 @@
 "use client";
 
-import { DownloadIcon, PencilIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import {
+  DownloadIcon,
+  InfoIcon,
+  PencilIcon,
+  RotateCcwIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import {
   Cell,
@@ -52,15 +58,21 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { formatBrazilDate } from "@/lib/atestados";
+import { findCidRecord } from "@/lib/cid";
 import { certificatesQueryKey, useMedicalCertificates } from "@/hooks/use-atestados";
 import { useAtestadosStore } from "@/stores/atestados-store";
-import type { MedicalCertificate } from "@/types/medical-certificate";
+import type {
+  MedicalCertificate,
+  MedicalCertificateType,
+} from "@/types/medical-certificate";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import styles from "./dashboard.module.css";
 
 type ChartMode = "bar" | "pie";
+type ChartValueMode = "hours" | "cost";
+type ChartTypeFilter = MedicalCertificateType | "Todos";
 
 type GroupedMetric = {
   label: string;
@@ -68,12 +80,25 @@ type GroupedMetric = {
   cost: number;
 };
 
-const chartColors = ["#d9a913", "#86a8ff", "#6e4e80", "#e07a7a", "#b991ff"];
+const chartColors = [
+  "#2563eb",
+  "#86a8ff",
+  "#6e4e80",
+  "#e07a7a",
+  "#b991ff",
+  "#4fb8a8",
+  "#f28c38",
+  "#5fb3f3",
+  "#c96f9f",
+  "#8ccf5f",
+  "#f0d35d",
+  "#9aa7b2",
+];
 
 const chartConfig = {
   hours: {
     label: "Horas",
-    color: "#d9a913",
+    color: "#2563eb",
   },
   cost: {
     label: "Custo",
@@ -97,6 +122,8 @@ export default function DashboardPage() {
   const [businessDays, setBusinessDays] = useState(22);
   const [defaultHourlyValue, setDefaultHourlyValue] = useState(22);
   const [chartMode, setChartMode] = useState<ChartMode>("bar");
+  const [chartTypeFilter, setChartTypeFilter] =
+    useState<ChartTypeFilter>("Todos");
   const [editingCertificate, setEditingCertificate] =
     useState<MedicalCertificate | null>(null);
 
@@ -134,6 +161,16 @@ export default function DashboardPage() {
     [businessDays, defaultHourlyValue, filteredCertificates, workdayHours]
   );
 
+  const chartCertificates = useMemo(
+    () =>
+      chartTypeFilter === "Todos"
+        ? filteredCertificates
+        : filteredCertificates.filter(
+            (certificate) => certificate.type === chartTypeFilter
+          ),
+    [chartTypeFilter, filteredCertificates]
+  );
+
   const options = useMemo(
     () => ({
       names: getUniqueOptions(certificates, (item) => item.employeeName),
@@ -147,27 +184,31 @@ export default function DashboardPage() {
   const metrics = useMemo(
     () => ({
       byName: groupByMetric(
-        filteredCertificates,
+        chartCertificates,
         (item) => item.employeeName,
-        defaultHourlyValue
+        defaultHourlyValue,
+        workdayHours
       ),
       byJobSite: groupByMetric(
-        filteredCertificates,
+        chartCertificates,
         (item) => item.jobSite,
-        defaultHourlyValue
+        defaultHourlyValue,
+        workdayHours
       ),
       byRole: groupByMetric(
-        filteredCertificates,
+        chartCertificates,
         (item) => item.role,
-        defaultHourlyValue
+        defaultHourlyValue,
+        workdayHours
       ),
       byCid: groupByMetric(
-        filteredCertificates,
+        chartCertificates,
         (item) => getCidLabel(item),
-        defaultHourlyValue
+        defaultHourlyValue,
+        workdayHours
       ),
     }),
-    [defaultHourlyValue, filteredCertificates]
+    [chartCertificates, defaultHourlyValue, workdayHours]
   );
 
   function resetFilters() {
@@ -181,7 +222,7 @@ export default function DashboardPage() {
   }
 
   function downloadCsv() {
-    const csv = toCsv(filteredCertificates, defaultHourlyValue);
+    const csv = toCsv(filteredCertificates, defaultHourlyValue, workdayHours);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -202,8 +243,9 @@ export default function DashboardPage() {
     }
 
     deleteCertificate(certificate.id);
+    setEditingCertificate(null);
     queryClient.invalidateQueries({ queryKey: certificatesQueryKey });
-    toast.success("Registro excluido.");
+    toast.success("Registro excluído.");
   }
 
   function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
@@ -222,7 +264,7 @@ export default function DashboardPage() {
     const absenceHours = Number(formData.get("absenceHours") ?? 0);
 
     if (!employeeName || !jobSite || !role || !leaveStart || absenceHours <= 0) {
-      toast.error("Preencha nome, obra, funcao, data inicial e horas.");
+      toast.error("Preencha nome, obra, função, data inicial e horas.");
       return;
     }
 
@@ -257,12 +299,12 @@ export default function DashboardPage() {
             onChange={setWorkdayHours}
           />
           <NumberField
-            label="Dias uteis/mes"
+            label="Dias úteis/mês"
             value={businessDays}
             onChange={setBusinessDays}
           />
           <NumberField
-            label="Valor hora padrao (R$)"
+            label="Valor hora padrão (R$)"
             value={defaultHourlyValue}
             onChange={setDefaultHourlyValue}
           />
@@ -272,7 +314,8 @@ export default function DashboardPage() {
           <SummaryCard label="Registros" value={summary.totalForms} />
           <SummaryCard label="Horas ausentes" value={summary.totalHours} />
           <SummaryCard
-            label="Absenteismo"
+            info="Absenteísmo = (horas ausentes / horas disponíveis) x 100. Horas disponíveis = colaboradores filtrados x jornada/dia x dias úteis/mês."
+            label="Absenteísmo"
             value={`${summary.absenteeism.toLocaleString("pt-BR", {
               maximumFractionDigits: 2,
             })}%`}
@@ -292,7 +335,7 @@ export default function DashboardPage() {
               <FieldLabel htmlFor="search">Pesquisa geral</FieldLabel>
               <Input
                 id="search"
-                placeholder="Filtrar por nome, obra, funcao ou CID"
+                placeholder="Filtrar por nome, obra, função ou CID"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -310,7 +353,7 @@ export default function DashboardPage() {
               onChange={setJobSiteFilter}
             />
             <FilterSelect
-              label="Funcao"
+              label="Função"
               options={options.roles}
               value={roleFilter}
               onChange={setRoleFilter}
@@ -355,55 +398,80 @@ export default function DashboardPage() {
 
         <section className={styles.chartsHeader}>
           <div>
-            <h2>Resumo em graficos</h2>
-            <p>Indices de atestado por nome, obra, funcao e CID.</p>
+            <h2>Resumo em gráficos</h2>
+            <p>Índices por nome, obra, função e CID.</p>
           </div>
-          <Button
-            className={styles.chartModeButton}
-            variant="secondary"
-            onClick={() => setChartMode(chartMode === "bar" ? "pie" : "bar")}
-          >
-            Ver grafico {chartMode === "bar" ? "pizza" : "linha"}
-          </Button>
+          <div className={styles.chartControls}>
+            <div
+              aria-label="Filtrar gráficos por tipo"
+              className={styles.chartTypeToggle}
+              role="group"
+            >
+              {(["Atestado", "Declaracao", "Todos"] as ChartTypeFilter[]).map(
+                (item) => (
+                  <Button
+                    aria-pressed={chartTypeFilter === item}
+                    data-active={chartTypeFilter === item}
+                    key={item}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setChartTypeFilter(item)}
+                  >
+                    {formatCertificateType(item)}
+                  </Button>
+                )
+              )}
+            </div>
+            <Button
+              className={styles.chartModeButton}
+              variant="secondary"
+              onClick={() => setChartMode(chartMode === "bar" ? "pie" : "bar")}
+            >
+              Ver gráfico {chartMode === "bar" ? "pizza" : "linha"}
+            </Button>
+          </div>
         </section>
 
         <section className={styles.chartGrid}>
-          <MetricChart title="Indice por nome" data={metrics.byName} mode={chartMode} />
-          <MetricChart title="Indice por obra" data={metrics.byJobSite} mode={chartMode} />
-          <MetricChart title="Indice por funcao" data={metrics.byRole} mode={chartMode} />
-          <MetricChart title="Indice por CID" data={metrics.byCid} mode={chartMode} />
+          <MetricChart title="Índice por nome" data={metrics.byName} mode={chartMode} />
+          <MetricChart title="Índice por obra" data={metrics.byJobSite} mode={chartMode} />
+          <MetricChart title="Índice por função" data={metrics.byRole} mode={chartMode} />
+          <MetricChart title="Índice por CID" data={metrics.byCid} mode={chartMode} />
         </section>
 
         <Card className={styles.tableCard}>
           <CardHeader className={styles.tableHeader}>
             <div>
-              <CardTitle>Formularios</CardTitle>
+              <CardTitle>Formulários</CardTitle>
               <CardDescription>
-                Registros filtrados e prontos para sincronizacao SharePoint.
+                Registros filtrados e prontos para sincronização SharePoint.
               </CardDescription>
             </div>
             <span>{filteredCertificates.length} registro(s)</span>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className={styles.recordsTable}>
               <TableHeader>
                 <TableRow>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Obra</TableHead>
-                  <TableHead>Funcao</TableHead>
+                  <TableHead>Função</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>CID</TableHead>
                   <TableHead className={styles.numeric}>Horas</TableHead>
                   <TableHead className={styles.numeric}>Custo</TableHead>
-                  <TableHead>Acoes</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCertificates.map((certificate) => (
                   <TableRow key={certificate.id}>
                     <TableCell>
-                      <Badge variant="secondary">{certificate.type}</Badge>
+                      <Badge variant="secondary">
+                        {formatCertificateType(certificate.type)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <strong>{certificate.employeeName}</strong>
@@ -414,17 +482,20 @@ export default function DashboardPage() {
                     <TableCell>{formatDateRange(certificate)}</TableCell>
                     <TableCell>
                       <strong>{certificate.cid?.code ?? "-"}</strong>
-                      <span className={styles.cidDescription}>
-                        {certificate.cid?.description ?? "Sem CID"}
-                      </span>
+                      {getCidAbbreviation(certificate) ? (
+                        <span className={styles.cidDescription}>
+                          {getCidAbbreviation(certificate)}
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell className={styles.numeric}>
-                      {certificate.absenceHours}
+                      {getCertificateAbsenceHours(certificate, workdayHours)}
                     </TableCell>
                     <TableCell className={styles.numeric}>
                       {getCertificateCost(
                         certificate,
-                        defaultHourlyValue
+                        defaultHourlyValue,
+                        workdayHours
                       ).toLocaleString("pt-BR", {
                         currency: "BRL",
                         style: "currency",
@@ -433,21 +504,12 @@ export default function DashboardPage() {
                     <TableCell>
                       <div className={styles.rowActions}>
                         <Button
-                          size="sm"
+                          aria-label={`Editar registro de ${certificate.employeeName}`}
+                          size="icon-sm"
                           type="button"
                           onClick={() => setEditingCertificate(certificate)}
                         >
-                          <PencilIcon data-icon="inline-start" />
-                          Editar
-                        </Button>
-                        <Button
-                          className={styles.deleteButton}
-                          size="sm"
-                          type="button"
-                          onClick={() => handleDelete(certificate)}
-                        >
-                          <Trash2Icon data-icon="inline-start" />
-                          Excluir
+                          <PencilIcon />
                         </Button>
                       </div>
                     </TableCell>
@@ -468,7 +530,7 @@ export default function DashboardPage() {
         >
           <DialogContent className={styles.editDialog}>
             <DialogHeader>
-              <DialogTitle>Editar formulario</DialogTitle>
+              <DialogTitle>Editar formulário</DialogTitle>
               <DialogDescription>
                 Altere dados principais do registro selecionado.
               </DialogDescription>
@@ -494,7 +556,7 @@ export default function DashboardPage() {
                   />
                   <EditTextField
                     defaultValue={editingCertificate.role}
-                    label="Funcao"
+                    label="Função"
                     name="role"
                   />
                   <EditTextField
@@ -510,7 +572,12 @@ export default function DashboardPage() {
                     type="date"
                   />
                   <EditTextField
-                    defaultValue={String(editingCertificate.absenceHours)}
+                    defaultValue={String(
+                      getCertificateAbsenceHours(
+                        editingCertificate,
+                        workdayHours
+                      )
+                    )}
                     label="Horas"
                     min="1"
                     name="absenceHours"
@@ -533,12 +600,12 @@ export default function DashboardPage() {
 
                 <EditTextField
                   defaultValue={editingCertificate.cid?.description ?? ""}
-                  label="Descricao CID"
+                  label="Descrição CID"
                   name="cidDescription"
                 />
 
                 <Field>
-                  <FieldLabel htmlFor="notes">Observacao</FieldLabel>
+                  <FieldLabel htmlFor="notes">Observação</FieldLabel>
                   <Textarea
                     defaultValue={editingCertificate.notes ?? ""}
                     id="notes"
@@ -546,15 +613,28 @@ export default function DashboardPage() {
                   />
                 </Field>
 
-                <DialogFooter>
+                <DialogFooter className={styles.editFooter}>
                   <Button
-                    variant="secondary"
+                    className={styles.deleteButton}
                     type="button"
-                    onClick={() => setEditingCertificate(null)}
+                    onClick={() => handleDelete(editingCertificate)}
                   >
-                    Cancelar
+                    <Trash2Icon data-icon="inline-start" />
+                    Excluir
                   </Button>
-                  <Button type="submit">Salvar alteracoes</Button>
+                  <div className={styles.editFooterActions}>
+                    <Button
+                      className={styles.cancelButton}
+                      variant="secondary"
+                      type="button"
+                      onClick={() => setEditingCertificate(null)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button className={styles.saveButton} type="submit">
+                      Salvar alterações
+                    </Button>
+                  </div>
                 </DialogFooter>
               </form>
             ) : null}
@@ -565,12 +645,32 @@ export default function DashboardPage() {
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number | string }) {
+function SummaryCard({
+  info,
+  label,
+  value,
+}: {
+  info?: string;
+  label: string;
+  value: number | string;
+}) {
   return (
     <Card className={styles.summaryCard}>
       <CardHeader>
         <CardTitle>{value}</CardTitle>
         <CardDescription>{label}</CardDescription>
+        {info ? (
+          <span
+            aria-label={info}
+            className={styles.infoTooltip}
+            tabIndex={0}
+          >
+            <InfoIcon aria-hidden="true" />
+            <span className={styles.infoTooltipText} role="tooltip">
+              {info}
+            </span>
+          </span>
+        ) : null}
       </CardHeader>
     </Card>
   );
@@ -648,16 +748,50 @@ function MetricChart({
   mode: ChartMode;
   title: string;
 }) {
+  const [valueMode, setValueMode] = useState<ChartValueMode>("hours");
+  const sortedData = useMemo(
+    () =>
+      [...data].sort(
+        (first, second) => second[valueMode] - first[valueMode]
+      ),
+    [data, valueMode]
+  );
+
   return (
     <Card className={styles.chartCard}>
       <CardHeader className={styles.chartCardHeader}>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>Horas e custo</CardDescription>
+        <div
+          aria-label="Alternar métrica do gráfico"
+          className={styles.chartMetricToggle}
+          role="group"
+        >
+          <Button
+            aria-pressed={valueMode === "hours"}
+            data-active={valueMode === "hours"}
+            size="xs"
+            type="button"
+            variant="ghost"
+            onClick={() => setValueMode("hours")}
+          >
+            Horas
+          </Button>
+          <Button
+            aria-pressed={valueMode === "cost"}
+            data-active={valueMode === "cost"}
+            size="xs"
+            type="button"
+            variant="ghost"
+            onClick={() => setValueMode("cost")}
+          >
+            R$
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {data.length ? (
+        {sortedData.length ? (
           mode === "bar" ? (
-            <LinearMetricList data={data} />
+            <LinearMetricList data={sortedData} valueMode={valueMode} />
           ) : (
             <ChartContainer
               className={styles.chartContainer}
@@ -666,14 +800,14 @@ function MetricChart({
               <PieChart accessibilityLayer>
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Pie
-                  data={data}
-                  dataKey="hours"
+                  data={sortedData}
+                  dataKey={valueMode}
                   innerRadius={44}
                   nameKey="label"
                   outerRadius={78}
                   strokeWidth={2}
                 >
-                  {data.map((item, index) => (
+                  {sortedData.map((item, index) => (
                     <Cell
                       fill={chartColors[index % chartColors.length]}
                       key={item.label}
@@ -691,8 +825,14 @@ function MetricChart({
   );
 }
 
-function LinearMetricList({ data }: { data: GroupedMetric[] }) {
-  const maxHours = Math.max(...data.map((item) => item.hours), 1);
+function LinearMetricList({
+  data,
+  valueMode,
+}: {
+  data: GroupedMetric[];
+  valueMode: ChartValueMode;
+}) {
+  const maxValue = Math.max(...data.map((item) => item[valueMode]), 1);
 
   return (
     <div className={styles.linearMetricList}>
@@ -702,14 +842,26 @@ function LinearMetricList({ data }: { data: GroupedMetric[] }) {
           <div className={styles.linearMetricTrack}>
             <span
               className={styles.linearMetricBar}
-              style={{ width: `${(item.hours / maxHours) * 100}%` }}
+              style={{ width: `${(item[valueMode] / maxValue) * 100}%` }}
             />
           </div>
-          <strong>{item.hours}h</strong>
+          <strong>{formatMetricValue(item, valueMode)}</strong>
         </div>
       ))}
     </div>
   );
+}
+
+function formatMetricValue(item: GroupedMetric, valueMode: ChartValueMode) {
+  if (valueMode === "hours") {
+    return `${item.hours}h`;
+  }
+
+  return item.cost.toLocaleString("pt-BR", {
+    currency: "BRL",
+    maximumFractionDigits: 0,
+    style: "currency",
+  });
 }
 
 function EditTextField({
@@ -799,16 +951,21 @@ function filterCertificates(
 function groupByMetric(
   certificates: MedicalCertificate[],
   getKey: (certificate: MedicalCertificate) => string,
-  defaultHourlyValue: number
+  defaultHourlyValue: number,
+  workdayHours: number
 ) {
   const grouped = new Map<string, GroupedMetric>();
 
   certificates.forEach((certificate) => {
-    const label = getKey(certificate) || "Sem informacao";
+    const label = getKey(certificate) || "Sem informação";
     const current = grouped.get(label) ?? { label, hours: 0, cost: 0 };
 
-    current.hours += certificate.absenceHours;
-    current.cost += getCertificateCost(certificate, defaultHourlyValue);
+    current.hours += getCertificateAbsenceHours(certificate, workdayHours);
+    current.cost += getCertificateCost(
+      certificate,
+      defaultHourlyValue,
+      workdayHours
+    );
     grouped.set(label, current);
   });
 
@@ -824,12 +981,13 @@ function getDashboardSummary(
   defaultHourlyValue: number
 ) {
   const totalHours = certificates.reduce(
-    (sum, certificate) => sum + certificate.absenceHours,
+    (sum, certificate) =>
+      sum + getCertificateAbsenceHours(certificate, workdayHours),
     0
   );
   const estimatedCost = certificates.reduce(
     (sum, certificate) =>
-      sum + getCertificateCost(certificate, defaultHourlyValue),
+      sum + getCertificateCost(certificate, defaultHourlyValue, workdayHours),
     0
   );
   const employeeCount = new Set(
@@ -847,9 +1005,24 @@ function getDashboardSummary(
 
 function getCertificateCost(
   certificate: MedicalCertificate,
-  defaultHourlyValue: number
+  defaultHourlyValue: number,
+  workdayHours: number
 ) {
-  return certificate.absenceHours * (certificate.hourlyValue || defaultHourlyValue);
+  return (
+    getCertificateAbsenceHours(certificate, workdayHours) *
+    (certificate.hourlyValue || defaultHourlyValue)
+  );
+}
+
+function getCertificateAbsenceHours(
+  certificate: MedicalCertificate,
+  workdayHours: number
+) {
+  if (certificate.type === "Atestado" && certificate.leaveDays) {
+    return certificate.leaveDays * workdayHours;
+  }
+
+  return certificate.absenceHours;
 }
 
 function getUniqueOptions(
@@ -861,6 +1034,29 @@ function getUniqueOptions(
 
 function getCidLabel(certificate: MedicalCertificate) {
   return certificate.cid?.code ?? "Sem CID";
+}
+
+function getCidAbbreviation(certificate: MedicalCertificate) {
+  const cidCode = certificate.cid?.code;
+
+  if (!cidCode) {
+    return "";
+  }
+
+  return (
+    certificate.cid?.abbreviation ||
+    findCidRecord(cidCode)?.abbreviation ||
+    certificate.cid?.description ||
+    ""
+  );
+}
+
+function formatCertificateType(type: ChartTypeFilter) {
+  if (type === "Declaracao") {
+    return "Declaração";
+  }
+
+  return type;
 }
 
 function formatDateRange(certificate: MedicalCertificate) {
@@ -888,17 +1084,21 @@ function getFormValue(formData: FormData, field: string) {
   return String(formData.get(field) ?? "").trim();
 }
 
-function toCsv(certificates: MedicalCertificate[], defaultHourlyValue: number) {
+function toCsv(
+  certificates: MedicalCertificate[],
+  defaultHourlyValue: number,
+  workdayHours: number
+) {
   const rows = certificates.map((certificate) => [
-    certificate.type,
+    formatCertificateType(certificate.type),
     certificate.employeeName,
     certificate.jobSite,
     certificate.role,
     formatDateRange(certificate),
     certificate.cid?.code ?? "",
     certificate.cid?.description ?? "",
-    certificate.absenceHours,
-    getCertificateCost(certificate, defaultHourlyValue).toFixed(2),
+    getCertificateAbsenceHours(certificate, workdayHours),
+    getCertificateCost(certificate, defaultHourlyValue, workdayHours).toFixed(2),
   ]);
 
   return [
@@ -906,10 +1106,10 @@ function toCsv(certificates: MedicalCertificate[], defaultHourlyValue: number) {
       "Tipo",
       "Nome",
       "Obra",
-      "Funcao",
+      "Função",
       "Data",
       "CID",
-      "Descricao CID",
+      "Descrição CID",
       "Horas",
       "Custo",
     ],

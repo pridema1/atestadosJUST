@@ -23,8 +23,8 @@
 }
 
 .primaryAction {
-  background: #d9a913;
-  color: #111111;
+  background: #2563eb;
+  color: #ffffff;
   flex-shrink: 0;
   font-weight: 800;
 }
@@ -43,7 +43,7 @@
 }
 
 .metricValue {
-  color: #e5b21c;
+  color: #2563eb;
   font-size: 2rem;
 }
 

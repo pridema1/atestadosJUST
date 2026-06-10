@@ -8,7 +8,7 @@ import styles from "./app-shell.module.css";
 
 const navItems = [
   { href: "/inicio", label: "Tela inicial" },
-  { href: "/novo-formulario", label: "Novo formulario" },
+  { href: "/novo-formulario", label: "Novo formulário" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         </div>
 
-        <nav className={styles.nav} aria-label="Navegacao principal">
+        <nav className={styles.nav} aria-label="Navegação principal">
           {navItems.map((item) => (
             <Link
               aria-current={pathname === item.href ? "page" : undefined}

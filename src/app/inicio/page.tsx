@@ -24,9 +24,9 @@ export default function InicioPage() {
     <AppShell>
       <section className={styles.hero}>
         <div>
-          <h1>Gestao de Atestados Medicos</h1>
+          <h1>Gestão de Atestados Médicos</h1>
           <p>
-            Controle de formularios medicos, absenteismo e custo operacional
+            Controle de formulários médicos, absenteísmo e custo operacional
             para obras da Construtora JUST.
           </p>
         </div>
@@ -34,30 +34,33 @@ export default function InicioPage() {
           className={buttonVariants({ className: styles.primaryAction })}
           href="/novo-formulario"
         >
-          Preencher formulario
+          Preencher formulário
         </Link>
       </section>
 
       <section className={styles.metrics} aria-label="Resumo dos atestados">
         <MetricCard
-          description="Atestados e declaracoes carregados para acompanhamento."
-          label="Formularios enviados"
+          description="Atestados e declarações carregados para acompanhamento."
+          label="Formulários enviados"
           value={summary.totalForms.toString()}
         />
         <MetricCard
-          description="Base para taxa e custo de absenteismo."
+          description="Base para taxa e custo de absenteísmo."
           label="Horas de afastamento"
           value={summary.totalHours.toString()}
         />
         <MetricCard
           description="Data do registro mais recente."
-          label="Ultimo envio"
+          label="Último envio"
           value={formatBrazilDate(summary.lastSubmittedAt)}
         />
       </section>
 
       <div className={styles.actions}>
-        <Link className={buttonVariants()} href="/novo-formulario">
+        <Link
+          className={buttonVariants({ className: styles.primaryAction })}
+          href="/novo-formulario"
+        >
           Novo envio
         </Link>
         <Link

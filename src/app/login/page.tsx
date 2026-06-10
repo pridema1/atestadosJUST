@@ -35,7 +35,7 @@ export default function LoginPage() {
     setSubmitted(true);
 
     if (!username.trim() || !password.trim()) {
-      toast.error("Informe usuario e senha.");
+      toast.error("Informe usuário e senha.");
       return;
     }
 
@@ -58,7 +58,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             <FieldGroup>
               <Field data-invalid={usernameInvalid}>
-                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <FieldLabel htmlFor="username">Usuário</FieldLabel>
                 <Input
                   aria-invalid={usernameInvalid}
                   id="username"
@@ -66,12 +66,12 @@ export default function LoginPage() {
                   onChange={(event) => setUsername(event.target.value)}
                 />
                 <FieldError>
-                  {usernameInvalid ? "Informe o usuario." : null}
+                  {usernameInvalid ? "Informe o usuário." : null}
                 </FieldError>
               </Field>
 
               <Field data-invalid={passwordInvalid}>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">Senha</FieldLabel>
                 <Input
                   aria-invalid={passwordInvalid}
                   id="password"
