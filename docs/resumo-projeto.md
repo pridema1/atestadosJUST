@@ -32,8 +32,8 @@ Sistema interno da Construtora JUST para registrar e acompanhar atestados medico
 
 - `/login`: autenticao visual simples com usuario e senha. Valida campos vazios e notifica no canto superior direito.
 - `/inicio`: tela inicial com shell lateral, CTA para novo formulario e cards de metricas.
-- `/novo-formulario`: formulario de registro de atestado ou declaracao medica. Usa toggle de tipo, valida obrigatorios por tipo e autocompleta CID a partir dos CSVs em `src/lib/cid-data.ts`.
-- `/dashboard`: resumo com filtros por nome, obra, funcao, CID e datas; cards de indicadores; graficos dinamicos por nome, obra, funcao e CID com alternancia barra/pizza; tabela completa; exportacao CSV; acoes para editar e excluir registros.
+- `/novo-formulario`: formulario de registro de atestado ou declaracao medica. Usa toggle de tipo, valida obrigatorios por tipo, mostra dropdown de opcoes CID antes de preencher campos, autocompleta dias por data inicial/final e autocompleta horas da declaracao por hora inicial/final.
+- `/dashboard`: resumo com filtros por nome, obra, funcao, CID e datas; cards de indicadores; graficos dinamicos por nome, obra, funcao e CID com alternancia lista linear fina/pizza; tabela completa; exportacao CSV; acoes para editar e excluir registros.
 
 ## SharePoint: opcoes sugeridas
 

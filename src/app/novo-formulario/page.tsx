@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ClipboardPlusIcon } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -26,13 +26,14 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group";
-import { findCidRecord } from "@/lib/cid";
+import { searchCidRecords } from "@/lib/cid";
 import { certificatesQueryKey } from "@/hooks/use-atestados";
 import { useAtestadosStore } from "@/stores/atestados-store";
 import type {
   CidFields,
   MedicalCertificateType,
 } from "@/types/medical-certificate";
+import type { CidRecord } from "@/lib/cid-data";
 
 import styles from "./novo-formulario.module.css";
 
@@ -57,8 +58,22 @@ export default function NovoFormularioPage() {
   const [type, setType] = useState<MedicalCertificateType>("Atestado");
   const [cid, setCid] = useState<CidFields>(emptyCid);
   const [cidSearch, setCidSearch] = useState("");
+  const [leaveStart, setLeaveStart] = useState("");
+  const [leaveEnd, setLeaveEnd] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [isCidDropdownOpen, setIsCidDropdownOpen] = useState(false);
 
   const isMedicalCertificate = type === "Atestado";
+  const cidOptions = useMemo(() => searchCidRecords(cidSearch), [cidSearch]);
+  const leaveDays = useMemo(
+    () => calculateLeaveDays(leaveStart, leaveEnd),
+    [leaveEnd, leaveStart]
+  );
+  const statementHours = useMemo(
+    () => calculateHoursBetween(startTime, endTime),
+    [endTime, startTime]
+  );
 
   function handleTypeChange(value: string[]) {
     const nextType = value[0] as MedicalCertificateType | undefined;
@@ -70,14 +85,13 @@ export default function NovoFormularioPage() {
 
   function handleCidSearch(value: string) {
     setCidSearch(value);
+    setCid({ ...emptyCid, code: value });
+    setIsCidDropdownOpen(true);
+  }
 
-    const record = findCidRecord(value);
-
-    if (!record) {
-      setCid({ ...emptyCid, code: value });
-      return;
-    }
-
+  function handleCidSelect(record: CidRecord) {
+    setCidSearch(`${record.code} - ${record.description}`);
+    setIsCidDropdownOpen(false);
     setCid({
       code: record.code,
       abbreviation: record.abbreviation,
@@ -100,8 +114,11 @@ export default function NovoFormularioPage() {
     const leaveEnd = getField(formData, "leaveEnd");
     const startTime = getField(formData, "startTime");
     const endTime = getField(formData, "endTime");
-    const leaveDays = Number(formData.get("leaveDays") ?? 0);
-    const absenceHours = Number(formData.get("absenceHours") ?? 0);
+    const computedLeaveDays = calculateLeaveDays(leaveStart, leaveEnd);
+    const computedAbsenceHours =
+      type === "Atestado"
+        ? computedLeaveDays * 24
+        : calculateHoursBetween(startTime, endTime);
     const hourlyValue = Number(formData.get("hourlyValue") ?? 0);
     const missingFields = getMissingFields({
       type,
@@ -112,8 +129,8 @@ export default function NovoFormularioPage() {
       leaveEnd,
       startTime,
       endTime,
-      leaveDays,
-      absenceHours,
+      leaveDays: computedLeaveDays,
+      absenceHours: computedAbsenceHours,
       cidCode: cid.code,
     });
 
@@ -131,8 +148,8 @@ export default function NovoFormularioPage() {
       leaveEnd: leaveEnd || undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
-      leaveDays: leaveDays || undefined,
-      absenceHours,
+      leaveDays: computedLeaveDays || undefined,
+      absenceHours: computedAbsenceHours,
       hourlyValue: hourlyValue || undefined,
       cid: cid.code ? cid : undefined,
       notes: getField(formData, "notes") || undefined,
@@ -142,6 +159,10 @@ export default function NovoFormularioPage() {
     event.currentTarget.reset();
     setCid(emptyCid);
     setCidSearch("");
+    setLeaveStart("");
+    setLeaveEnd("");
+    setStartTime("");
+    setEndTime("");
     setType("Atestado");
     toast.success("Formulario enviado.");
   }
@@ -195,9 +216,25 @@ export default function NovoFormularioPage() {
               </div>
 
               {isMedicalCertificate ? (
-                <MedicalCertificateFields />
+                <MedicalCertificateFields
+                  leaveDays={leaveDays}
+                  leaveEnd={leaveEnd}
+                  leaveStart={leaveStart}
+                  setLeaveEnd={setLeaveEnd}
+                  setLeaveStart={setLeaveStart}
+                  setStartTime={setStartTime}
+                  setEndTime={setEndTime}
+                  startTime={startTime}
+                  endTime={endTime}
+                />
               ) : (
-                <MedicalStatementFields />
+                <MedicalStatementFields
+                  absenceHours={statementHours}
+                  endTime={endTime}
+                  setEndTime={setEndTime}
+                  setStartTime={setStartTime}
+                  startTime={startTime}
+                />
               )}
 
               <Field>
@@ -237,6 +274,9 @@ export default function NovoFormularioPage() {
                 cidSearch={cidSearch}
                 isRequired={isMedicalCertificate}
                 onCidSearch={handleCidSearch}
+                onCidSelect={handleCidSelect}
+                isDropdownOpen={isCidDropdownOpen}
+                options={cidOptions}
               />
 
               <Button className={styles.submit} type="submit">
@@ -251,59 +291,141 @@ export default function NovoFormularioPage() {
   );
 }
 
-function MedicalCertificateFields() {
+function MedicalCertificateFields({
+  endTime,
+  leaveDays,
+  leaveEnd,
+  leaveStart,
+  setEndTime,
+  setLeaveEnd,
+  setLeaveStart,
+  setStartTime,
+  startTime,
+}: {
+  endTime: string;
+  leaveDays: number;
+  leaveEnd: string;
+  leaveStart: string;
+  setEndTime: (value: string) => void;
+  setLeaveEnd: (value: string) => void;
+  setLeaveStart: (value: string) => void;
+  setStartTime: (value: string) => void;
+  startTime: string;
+}) {
   return (
     <>
       <div className={styles.gridTwo}>
-        <RequiredTextField id="leaveStart" label="Data inicial" type="date" />
-        <RequiredTextField id="leaveEnd" label="Data final" type="date" />
+        <Field>
+          <FieldLabel htmlFor="leaveStart">Data inicial</FieldLabel>
+          <Input
+            id="leaveStart"
+            name="leaveStart"
+            required
+            type="date"
+            value={leaveStart}
+            onChange={(event) => setLeaveStart(event.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="leaveEnd">Data final</FieldLabel>
+          <Input
+            id="leaveEnd"
+            name="leaveEnd"
+            required
+            type="date"
+            value={leaveEnd}
+            onChange={(event) => setLeaveEnd(event.target.value)}
+          />
+        </Field>
       </div>
 
       <div className={styles.gridTwo}>
-        <OptionalTextField
-          id="startTime"
-          label="Hora inicial (opcional)"
-          type="time"
-        />
-        <OptionalTextField
-          id="endTime"
-          label="Hora final (opcional)"
-          type="time"
-        />
+        <Field>
+          <FieldLabel htmlFor="startTime">Hora inicial (opcional)</FieldLabel>
+          <Input
+            id="startTime"
+            name="startTime"
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="endTime">Hora final (opcional)</FieldLabel>
+          <Input
+            id="endTime"
+            name="endTime"
+            type="time"
+            value={endTime}
+            onChange={(event) => setEndTime(event.target.value)}
+          />
+        </Field>
       </div>
 
-      <div className={styles.gridTwo}>
-        <RequiredTextField
+      <Field>
+        <FieldLabel htmlFor="leaveDays">Dias de afastamento</FieldLabel>
+        <Input
           id="leaveDays"
-          label="Dias de afastamento"
-          min="1"
-          type="number"
+          name="leaveDays"
+          readOnly
+          tabIndex={-1}
+          value={leaveDays || ""}
         />
-        <RequiredTextField
-          id="absenceHours"
-          label="Horas de afastamento"
-          min="1"
-          type="number"
-        />
-      </div>
+      </Field>
     </>
   );
 }
 
-function MedicalStatementFields() {
+function MedicalStatementFields({
+  absenceHours,
+  endTime,
+  setEndTime,
+  setStartTime,
+  startTime,
+}: {
+  absenceHours: number;
+  endTime: string;
+  setEndTime: (value: string) => void;
+  setStartTime: (value: string) => void;
+  startTime: string;
+}) {
   return (
     <>
       <div className={styles.gridTwo}>
-        <RequiredTextField id="startTime" label="Hora inicial" type="time" />
-        <RequiredTextField id="endTime" label="Hora final" type="time" />
+        <Field>
+          <FieldLabel htmlFor="startTime">Hora inicial</FieldLabel>
+          <Input
+            id="startTime"
+            name="startTime"
+            required
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="endTime">Hora final</FieldLabel>
+          <Input
+            id="endTime"
+            name="endTime"
+            required
+            type="time"
+            value={endTime}
+            onChange={(event) => setEndTime(event.target.value)}
+          />
+        </Field>
       </div>
 
-      <RequiredTextField
-        id="absenceHours"
-        label="Tempo de afastamento"
-        min="1"
-        type="number"
-      />
+      <Field>
+        <FieldLabel htmlFor="absenceHours">Horas de afastamento</FieldLabel>
+        <Input
+          id="absenceHours"
+          name="absenceHours"
+          readOnly
+          tabIndex={-1}
+          value={absenceHours || ""}
+        />
+      </Field>
     </>
   );
 }
@@ -312,18 +434,24 @@ function CidFieldsSection({
   cid,
   cidSearch,
   isRequired,
+  isDropdownOpen,
   onCidSearch,
+  onCidSelect,
+  options,
 }: {
   cid: CidFields;
   cidSearch: string;
+  isDropdownOpen: boolean;
   isRequired: boolean;
   onCidSearch: (value: string) => void;
+  onCidSelect: (record: CidRecord) => void;
+  options: CidRecord[];
 }) {
   return (
     <fieldset className={styles.cidBox}>
       <legend>CID{isRequired ? "" : " (opcional)"}</legend>
 
-      <Field>
+      <Field className={styles.cidSearchField}>
         <FieldLabel htmlFor="cidSearch">Busca CID</FieldLabel>
         <Input
           id="cidSearch"
@@ -333,6 +461,20 @@ function CidFieldsSection({
           value={cidSearch}
           onChange={(event) => onCidSearch(event.target.value)}
         />
+        {isDropdownOpen && options.length ? (
+          <div className={styles.cidDropdown}>
+            {options.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => onCidSelect(option)}
+              >
+                <strong>{option.code}</strong>
+                <span>{option.description}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </Field>
 
       <div className={styles.gridTwo}>
@@ -353,6 +495,40 @@ function CidFieldsSection({
       </div>
     </fieldset>
   );
+}
+
+function calculateLeaveDays(start: string, end: string) {
+  if (!start || !end) {
+    return 0;
+  }
+
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+  const diff = endDate.getTime() - startDate.getTime();
+
+  if (diff < 0) {
+    return 0;
+  }
+
+  return Math.floor(diff / 86400000) + 1;
+}
+
+function calculateHoursBetween(start: string, end: string) {
+  if (!start || !end) {
+    return 0;
+  }
+
+  const [startHour, startMinute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
+  const startTotal = startHour * 60 + startMinute;
+  const endTotal = endHour * 60 + endMinute;
+  const diff = endTotal - startTotal;
+
+  if (diff <= 0) {
+    return 0;
+  }
+
+  return Number((diff / 60).toFixed(2));
 }
 
 function RequiredTextField({
@@ -379,23 +555,6 @@ function RequiredTextField({
         required
         type={type}
       />
-    </Field>
-  );
-}
-
-function OptionalTextField({
-  id,
-  label,
-  type = "text",
-}: {
-  id: string;
-  label: string;
-  type?: string;
-}) {
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} name={id} type={type} />
     </Field>
   );
 }
@@ -459,7 +618,6 @@ function getMissingFields({
       [!leaveStart, "data inicial"],
       [!leaveEnd, "data final"],
       [leaveDays <= 0, "dias de afastamento"],
-      [absenceHours <= 0, "horas de afastamento"],
       [!cidCode, "CID"]
     );
   } else {

@@ -111,6 +111,50 @@
   width: 100%;
 }
 
+.linearMetricList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 150px;
+  justify-content: center;
+}
+
+.linearMetricRow {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 150px 1fr 48px;
+}
+
+.linearMetricLabel {
+  color: #f8fafc;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linearMetricTrack {
+  background: #101519;
+  border: 1px solid #34404a;
+  border-radius: 999px;
+  height: 7px;
+  overflow: hidden;
+}
+
+.linearMetricBar {
+  background: #d9a913;
+  border-radius: 999px;
+  display: block;
+  height: 100%;
+}
+
+.linearMetricRow strong {
+  color: #86a8ff;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
 .emptyChart {
   color: #b8c7d5;
   margin: 0;
@@ -207,5 +251,13 @@
 
   .editGrid {
     grid-template-columns: 1fr;
+  }
+
+  .linearMetricRow {
+    grid-template-columns: 1fr;
+  }
+
+  .linearMetricRow strong {
+    text-align: left;
   }
 }

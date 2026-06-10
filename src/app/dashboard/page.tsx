@@ -3,14 +3,9 @@
 import { DownloadIcon, PencilIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
-  XAxis,
-  YAxis,
 } from "recharts";
 
 import { AppShell } from "@/components/app-shell";
@@ -73,7 +68,7 @@ type GroupedMetric = {
   cost: number;
 };
 
-const chartColors = ["#d9a913", "#86a8ff", "#6fd0b8", "#e07a7a", "#b991ff"];
+const chartColors = ["#d9a913", "#86a8ff", "#6e4e80", "#e07a7a", "#b991ff"];
 
 const chartConfig = {
   hours: {
@@ -661,25 +656,13 @@ function MetricChart({
       </CardHeader>
       <CardContent>
         {data.length ? (
-          <ChartContainer
-            className={styles.chartContainer}
-            config={chartConfig}
-          >
-            {mode === "bar" ? (
-              <BarChart accessibilityLayer data={data} layout="vertical">
-                <CartesianGrid horizontal={false} stroke="#2f3a43" />
-                <XAxis dataKey="hours" hide type="number" />
-                <YAxis
-                  axisLine={false}
-                  dataKey="label"
-                  tickLine={false}
-                  type="category"
-                  width={110}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="hours" fill="#d9a913" radius={5} />
-              </BarChart>
-            ) : (
+          mode === "bar" ? (
+            <LinearMetricList data={data} />
+          ) : (
+            <ChartContainer
+              className={styles.chartContainer}
+              config={chartConfig}
+            >
               <PieChart accessibilityLayer>
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Pie
@@ -698,13 +681,34 @@ function MetricChart({
                   ))}
                 </Pie>
               </PieChart>
-            )}
-          </ChartContainer>
+            </ChartContainer>
+          )
         ) : (
           <p className={styles.emptyChart}>Sem dados para filtros atuais.</p>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function LinearMetricList({ data }: { data: GroupedMetric[] }) {
+  const maxHours = Math.max(...data.map((item) => item.hours), 1);
+
+  return (
+    <div className={styles.linearMetricList}>
+      {data.map((item) => (
+        <div className={styles.linearMetricRow} key={item.label}>
+          <span className={styles.linearMetricLabel}>{item.label}</span>
+          <div className={styles.linearMetricTrack}>
+            <span
+              className={styles.linearMetricBar}
+              style={{ width: `${(item.hours / maxHours) * 100}%` }}
+            />
+          </div>
+          <strong>{item.hours}h</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
