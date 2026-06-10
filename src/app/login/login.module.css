@@ -1,0 +1,20 @@
+.page {
+  align-items: center;
+  background: #f6f7f8;
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: min(100%, 360px);
+}
+
+.header {
+  text-align: center;
+}
+
+.submit {
+  width: 100%;
+}

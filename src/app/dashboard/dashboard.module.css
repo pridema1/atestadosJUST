@@ -1,0 +1,211 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings,
+.summary,
+.filterContent,
+.chartGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.settings {
+  background: #1a2025;
+  border: 1px solid #303a44;
+  border-radius: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 16px;
+}
+
+.summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summaryCard,
+.filterCard,
+.chartCard,
+.tableCard {
+  background: #1a2025;
+  border-color: #303a44;
+  color: #f8fafc;
+}
+
+.summaryCard [data-slot="card-title"] {
+  color: #d9a913;
+  font-size: clamp(1.45rem, 2.3vw, 2rem);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.summaryCard [data-slot="card-description"] {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.filterContent {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.searchField {
+  grid-column: span 2;
+}
+
+.select {
+  width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.toolbar button,
+.chartModeButton {
+  background: #d9a913;
+  color: #111111;
+  font-weight: 800;
+}
+
+.chartsHeader,
+.tableHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.chartsHeader h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.chartsHeader p,
+.tableHeader span {
+  color: #b8c7d5;
+  margin: 0;
+}
+
+.chartGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chartCardHeader {
+  align-items: start;
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.chartCardHeader [data-slot="card-description"] {
+  color: #b8c7d5;
+  justify-self: end;
+}
+
+.chartContainer {
+  height: 220px;
+  width: 100%;
+}
+
+.emptyChart {
+  color: #b8c7d5;
+  margin: 0;
+  min-height: 160px;
+}
+
+.tableCard {
+  overflow-x: auto;
+}
+
+.tableHeader {
+  min-width: 960px;
+}
+
+.recordId,
+.cidDescription {
+  color: #b8c7d5;
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.numeric {
+  text-align: right;
+}
+
+.rowActions {
+  display: flex;
+  gap: 8px;
+}
+
+.rowActions button {
+  background: #d9a913;
+  color: #111111;
+  font-weight: 800;
+}
+
+.rowActions .deleteButton {
+  background: #7f3545;
+  color: #ffffff;
+}
+
+.editDialog {
+  background: #1a2025;
+  border: 1px solid #303a44;
+  color: #f8fafc;
+  max-width: 760px;
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .summary,
+  .filterContent,
+  .chartGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .settings,
+  .summary,
+  .filterContent,
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .searchField {
+    grid-column: auto;
+  }
+
+  .toolbar,
+  .chartsHeader,
+  .tableHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar button {
+    width: 100%;
+  }
+
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+}

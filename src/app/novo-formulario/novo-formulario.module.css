@@ -1,0 +1,62 @@
+.card {
+  background: #171d21;
+  border-color: #303a44;
+  color: #f8fafc;
+  max-width: 980px;
+}
+
+.typeToggle {
+  background: #101519;
+  border: 1px solid #34404a;
+  padding: 4px;
+  width: 100%;
+}
+
+.typeToggleItem {
+  flex: 1;
+}
+
+.typeToggleItem[data-state="on"] {
+  background: #d9a913;
+  color: #111111;
+}
+
+.gridTwo {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cidBox {
+  border: 1px solid #34404a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 16px;
+}
+
+.cidBox legend {
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.cidBox input[readonly] {
+  border-style: dashed;
+  color: #bac7d3;
+}
+
+.submit {
+  background: #d9a913;
+  color: #111111;
+  font-weight: 800;
+  width: 100%;
+}
+
+@media (max-width: 780px) {
+  .gridTwo {
+    grid-template-columns: 1fr;
+  }
+}
